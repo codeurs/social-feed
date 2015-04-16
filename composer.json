@@ -1,0 +1,26 @@
+{
+    "name": "codeurs/social-feed", 
+    "type": "library",
+    "description": "Get feeds from different social networks in a unified format",
+    "keywords": ["social"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ben Merckx",
+            "email": "ben@codeurs.be",
+            "homepage": "https://codeurs.be",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "source": "https://github.com/codeurs/social-feed",
+        "issues": "https://github.com/codeurs/social-feed/issues"
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "abraham/twitteroauth": "0.5.*"
+    },
+    "autoload": {
+        "files": ["src/SocialFeed.php"]
+    }
+}
