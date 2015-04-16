@@ -313,7 +313,7 @@ class SocialFeedServiceInstagram extends SocialFeedService {
         $response = [];
         $data = $this->getApi("users/search?q=$username");
         $id = $data->data[0]->id;
-        $data = $this->getApi("/users/$id/media/recent/");
+        $data = $this->getApi("users/$id/media/recent/");
         foreach ($data->data as $item) {
             $response[] = $this->parseItem($item);
         }
@@ -321,7 +321,10 @@ class SocialFeedServiceInstagram extends SocialFeedService {
     }
 
     public function getItem($id) {
-        //return $this->parseItem($this->getGraph($id));
+        $url = urlencode("https://instagram.com/p/$id/");
+        $data = $this->getApi("oembed?url=$url");
+        $media_id = $data->media_id;
+        return $this->parseItem($this->getApi("media/$media_id")->data);
     }
 
     protected function getApi($endpoint) {
@@ -339,7 +342,7 @@ class SocialFeedServiceInstagram extends SocialFeedService {
         $media = new SocialFeedItemMedia();
         $response->service = $this->service;
         $response->id = $item->id;
-        $response->created = strtotime($item->created_time);
+        $response->created = (int) $item->created_time;
         $user->id = $item->user->id;
         $user->name = $item->user->full_name;
         $user->handle = $item->user->username;
@@ -347,19 +350,18 @@ class SocialFeedServiceInstagram extends SocialFeedService {
         $user->link = "https://instagram.com/{$user->handle}";
         $response->link = $item->link;
         $response->text = $item->caption->text;
-        /*switch ($item->type) {
-            case 'photo':
-                $media->image = "https://graph.facebook.com/{$item->object_id}/picture?type=normal";
-                break;
+
+        switch ($item->type) {
             case 'video':
-                $media = $this->mediaFromUrl($item->link);
-        }*/
-
-        if (isset($item->images->standard_resolution->url)) {
-            $media->image = $item->images->standard_resolution->url;
+                $media->video = new SocialFeedItemMediaVideo();
+                $media->video->id = $response->id;
+                $media->video->image = $item->images->standard_resolution->url;
+                $media->video->service = 'instagram';
+                break;
+            case 'image':
+                $media->image = $item->images->standard_resolution->url;
+                break;
         }
-
-        //images->standard_resolution->url
 
         $response->user = $user;
         $response->media = $media;
