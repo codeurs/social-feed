@@ -13,6 +13,7 @@ Use composer: `composer require codeurs/social-feed` or simply use the SocialFee
 - Implemented media: Twitter, Facebook, Instagram
 - Returns items in simple format
 - Gets information (id, service, thumbnail) on attached video/images from: youtube, vine, instagram, vimeo
+- Get an id from an url of a post
 
 ## Example
 
@@ -35,6 +36,10 @@ foreach ($data as $item) {
 
 // Get a single facebook post
 $item = $feed->facebook->getItem('646338148755451_704084252980840');
+
+// Get an id or item from a facebook url
+$id = $feed->facebook->getIdFromUrl('https://www.facebook.com/_/photos/_/?type=1&theater');
+$item = $feed->facebook->getItemFromUrl('https://www.facebook.com/_/photos/_/?type=1&theater');
 ```
 
 ### Output
