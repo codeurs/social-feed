@@ -316,7 +316,7 @@ class FacebookService extends SocialFeedService {
         if ($request === false)
             return null;
         $data = json_decode($request);
-        return $data->id;
+        return $data->{$url}->id;
     }
 
 	protected function getGraph($endpoint) {
@@ -331,6 +331,7 @@ class FacebookService extends SocialFeedService {
 	private function parseItem($item, $id = null) {
 		if ($id !== null && $item->from->id != $id)
 			return null;
+
 		$response = new Item();
 		$user = new User();
 		$media = new Media();
@@ -341,16 +342,28 @@ class FacebookService extends SocialFeedService {
 		$user->name = $item->from->name;
 		$user->image = "https://graph.facebook.com/v2.3/{$user->id}/picture/";
 		$user->link = "https://facebook.com/profile.php?id={$user->id}";
-		$response->link = $item->link;
+		$response->link = "http://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
 		if (isset($item->message))
 			$response->text = $item->message;
-		switch ($item->type) {
-			case 'photo':
-				$media->image = "https://graph.facebook.com/{$item->object_id}/picture?type=normal";
-				break;
-			case 'video':
-				$media = $this->mediaFromUrl($item->link);
-		}
+
+        if (isset($item->type)) {
+            switch ($item->type) {
+                case 'photo':
+                    $media->image = "https://graph.facebook.com/{$item->object_id}/picture?type=normal";
+                    break;
+                case 'video':
+                    $media = $this->mediaFromUrl($item->link);
+            }
+        }
+
+        if (isset($item->images)) {
+            $total = count($item->images);
+            if ($total > 1)
+                $media->image = $item->images[1]->source;
+            else if ($total == 1)
+                $media->image = $item->images[0]->source;
+        }
+
 		$response->user = $user;
 		$response->media = $media;
 		return $response;
