@@ -121,9 +121,23 @@ abstract class SocialFeedService {
 
 	/**
 	 * @param string $id
-	 * @return Item
+	 * @return Item|null
 	 */
 	abstract public function getItem($id);
+
+    /**
+     * @param string $url
+     * @return string|null
+     */
+    abstract public function getIdFromUrl($url);
+
+    /**
+     * @param string $url
+     * @return Item|null
+     */
+    public function getItemFromUrl($url) {
+        return $this->getItem($this->getIdFromUrl($url));
+    }
 
 	protected function mediaFromUrl($url) {
 		$media = new Media();
@@ -226,6 +240,13 @@ class TwitterService extends SocialFeedService {
 		return $this->parseItem($this->getConnection()->get("statuses/show/$id"));
 	}
 
+    public function getIdFromUrl($url) {
+        if (preg_match('/status\/([0-9]+)/i', $url, $matches)) {
+            return $matches[1];
+        }
+        return null;
+    }
+
 	private function parseItem($item) {
 		$response = new Item();
 		$user = new User();
@@ -289,6 +310,14 @@ class FacebookService extends SocialFeedService {
 	public function getItem($id) {
 		return $this->parseItem($this->getGraph($id));
 	}
+
+    public function getIdFromUrl($url) {
+        $request = @file_get_contents("https://graph.facebook.com/?ids=".urlencode($url));
+        if ($request === false)
+            return null;
+        $data = json_decode($request);
+        return $data->id;
+    }
 
 	protected function getGraph($endpoint) {
 		$credentials = $this->getCredentials();
@@ -357,6 +386,13 @@ class InstagramService extends SocialFeedService {
 		$media_id = $data->media_id;
 		return $this->parseItem($this->getApi("media/$media_id")->data);
 	}
+
+    public function getIdFromUrl($url) {
+        if (preg_match('/instagram\.com\/p\/([a-z0-9-_]+)\//i', $url, $matches)) {
+            return $matches[1];
+        }
+        return null;
+    }
 
 	protected function getApi($endpoint) {
 		$credentials = $this->getCredentials();
