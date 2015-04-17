@@ -4,7 +4,7 @@ Get feeds from different social networks in a unified format
 
 ## Install
 
-Use composer: `composer install codeurs/social-feed` or simply use the SocialFeed.php class in the src directory.
+Use composer: `composer require codeurs/social-feed` or simply use the SocialFeed.php class in the src directory.
 
 ## Features
 
