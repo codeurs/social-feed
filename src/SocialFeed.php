@@ -4,7 +4,7 @@ namespace Codeurs\SocialFeed;
 
 use Abraham\TwitterOAuth\TwitterOAuth;
 
-class SocialFeedItemUser {
+class User {
     /** @var string */
     var $id;
     /** @var string */
@@ -17,7 +17,7 @@ class SocialFeedItemUser {
     var $link;
 }
 
-class SocialFeedItemMediaVideo {
+class Video {
     /** @var string */
     var $service;
     /** @var string */
@@ -26,14 +26,14 @@ class SocialFeedItemMediaVideo {
     var $image;
 }
 
-class SocialFeedItemMedia {
+class Media {
     /** @var string */
     var $image;
-    /** @var SocialFeedItemMediaVideo */
+    /** @var Video */
     var $video;
 }
 
-class SocialFeedItem {
+class Item {
     /** @var string */
     var $service;
     /** @var string */
@@ -44,20 +44,27 @@ class SocialFeedItem {
     var $id;
     /** @var int */
     var $created;
-    /** @var SocialFeedItemUser */
+    /** @var User */
     var $user;
-    /** @var SocialFeedItemMedia */
+    /** @var Media */
     var $media;
 }
 
 /**
  * Get feeds from different social networks in a unified format
- * @property-read SocialFeedServiceTwitter $twitter
+ * @property-read TwitterService $twitter
  * @property-read SocialFeedService $facebook
  * @property-read SocialFeedService $instagram
  */
 class SocialFeed {
     private $services = [];
+    private $map = [];
+
+    public function __construct() {
+        $this->registerService('twitter', 'Codeurs\\SocialFeed\\TwitterService');
+        $this->registerService('facebook', 'Codeurs\\SocialFeed\\FacebookService');
+        $this->registerService('instagram', 'Codeurs\\SocialFeed\\InstagramService');
+    }
 
     /**
      * @param $service
@@ -68,14 +75,21 @@ class SocialFeed {
         if (isset($this->services[$service]))
             return $this->services[$service];
 
-        $className = 'Codeurs\\SocialFeed\\SocialFeedService'.ucfirst($service);
-        if (!class_exists($className))
+        if (!isset($this->map[$service]))
             throw new \Exception("Service not found: $service");
 
-        return $this->services[$service] = new $className();
+        return $this->services[$service] = new $this->map[$service]();
+    }
+
+    public function registerService($service, $className) {
+        $this->map[$service] = $className;
     }
 }
 
+/**
+ * Extend to provide a social medium
+ * @package Codeurs\SocialFeed
+ */
 abstract class SocialFeedService {
     /** @var object */
     protected $credentials;
@@ -91,19 +105,19 @@ abstract class SocialFeedService {
 
     /**
      * @param string $username
-     * @return SocialFeedItem[]
+     * @return Item[]
      */
     abstract public function getFeed($username);
 
     /**
      * @param string $id
-     * @return SocialFeedItem
+     * @return Item
      */
     abstract public function getItem($id);
 
     protected function mediaFromUrl($url) {
-        $media = new SocialFeedItemMedia();
-        $video = new SocialFeedItemMediaVideo();
+        $media = new Media();
+        $video = new Video();
         switch (1) {
             case preg_match('/vine\.co\/v\/([a-z0-9]+)/i', $url, $matches):
                 $video->id = $matches[1];
@@ -169,7 +183,7 @@ abstract class SocialFeedService {
     }
 }
 
-class SocialFeedServiceTwitter extends SocialFeedService {
+class TwitterService extends SocialFeedService {
     protected $service = 'twitter';
     protected $connection;
 
@@ -203,9 +217,9 @@ class SocialFeedServiceTwitter extends SocialFeedService {
     }
 
     private function parseItem($item) {
-        $response = new SocialFeedItem();
-        $user = new SocialFeedItemUser();
-        $media = new SocialFeedItemMedia();
+        $response = new Item();
+        $user = new User();
+        $media = new Media();
         $response->service = $this->service;
         $response->id = $item->id;
         $response->created = strtotime($item->created_at);
@@ -238,7 +252,7 @@ class SocialFeedServiceTwitter extends SocialFeedService {
     }
 }
 
-class SocialFeedServiceFacebook extends SocialFeedService {
+class FacebookService extends SocialFeedService {
     const API_URL = 'https://graph.facebook.com/v2.3/';
 
     protected $service = 'facebook';
@@ -272,9 +286,9 @@ class SocialFeedServiceFacebook extends SocialFeedService {
     }
 
     private function parseItem($item) {
-        $response = new SocialFeedItem();
-        $user = new SocialFeedItemUser();
-        $media = new SocialFeedItemMedia();
+        $response = new Item();
+        $user = new User();
+        $media = new Media();
         $response->service = $this->service;
         $response->id = $item->id;
         $response->created = strtotime($item->created_time);
@@ -298,7 +312,7 @@ class SocialFeedServiceFacebook extends SocialFeedService {
 
 }
 
-class SocialFeedServiceInstagram extends SocialFeedService {
+class InstagramService extends SocialFeedService {
     const API_URL = 'https://api.instagram.com/v1/';
 
     protected $service = 'instagram';
@@ -337,9 +351,9 @@ class SocialFeedServiceInstagram extends SocialFeedService {
     }
 
     private function parseItem($item) {
-        $response = new SocialFeedItem();
-        $user = new SocialFeedItemUser();
-        $media = new SocialFeedItemMedia();
+        $response = new Item();
+        $user = new User();
+        $media = new Media();
         $response->service = $this->service;
         $response->id = $item->id;
         $response->created = (int) $item->created_time;
@@ -353,7 +367,7 @@ class SocialFeedServiceInstagram extends SocialFeedService {
 
         switch ($item->type) {
             case 'video':
-                $media->video = new SocialFeedItemMediaVideo();
+                $media->video = new Video();
                 $media->video->id = $response->id;
                 $media->video->image = $item->images->standard_resolution->url;
                 $media->video->service = 'instagram';
