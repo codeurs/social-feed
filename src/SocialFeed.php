@@ -342,7 +342,7 @@ class FacebookService extends SocialFeedService {
 		$user->name = $item->from->name;
 		$user->image = "https://graph.facebook.com/v2.3/{$user->id}/picture/";
 		$user->link = "https://facebook.com/profile.php?id={$user->id}";
-		$response->link = "http://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
+		$response->link = "https://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
 		if (isset($item->message))
 			$response->text = $item->message;
 
