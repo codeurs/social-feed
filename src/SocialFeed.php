@@ -94,6 +94,21 @@ class SocialFeed {
 	public function registerService($service, $className) {
 		$this->map[$service] = $className;
 	}
+
+    /**
+     * Get service by url
+     * @param $url
+     * @return null|string
+     */
+    public function getServiceFromUrl($url) {
+        if (strpos($url, 'facebook') > -1)
+            return 'facebook';
+        if (strpos($url, 'twitter') > -1)
+            return 'twitter';
+        if (strpos($url, 'instagram') > -1)
+            return 'instagram';
+        return null;
+    }
 }
 
 /**
@@ -312,6 +327,9 @@ class FacebookService extends SocialFeedService {
 	}
 
     public function getIdFromUrl($url) {
+        if (preg_match('/\/posts\/([0-9]+)/i', $url, $matches)) {
+            return $matches[1];
+        }
         $request = @file_get_contents("https://graph.facebook.com/?ids=".urlencode($url));
         if ($request === false)
             return null;
@@ -342,10 +360,11 @@ class FacebookService extends SocialFeedService {
 		$user->name = $item->from->name;
 		$user->image = "https://graph.facebook.com/v2.3/{$user->id}/picture/";
 		$user->link = "https://facebook.com/profile.php?id={$user->id}";
-		$response->link = "https://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
+		$response->link = "http://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
 		if (isset($item->message))
 			$response->text = $item->message;
-
+        if (isset($item->name))
+            $response->text = $item->name;
         if (isset($item->type)) {
             switch ($item->type) {
                 case 'photo':
