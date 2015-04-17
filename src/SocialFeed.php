@@ -78,9 +78,19 @@ class SocialFeed {
         if (!isset($this->map[$service]))
             throw new \Exception("Service not found: $service");
 
-        return $this->services[$service] = new $this->map[$service]();
+        $instance = new $this->map[$service]();
+        if (!$instance instanceof SocialFeedService) {
+            throw new \Exception("Service $service does not implement SocialFeedService");
+        }
+
+        return $this->services[$service] = $instance;
     }
 
+    /**
+     * Add a new service
+     * @param string $service
+     * @param string $className
+     */
     public function registerService($service, $className) {
         $this->map[$service] = $className;
     }
