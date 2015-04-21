@@ -95,20 +95,20 @@ class SocialFeed {
 		$this->map[$service] = $className;
 	}
 
-    /**
-     * Get service by url
-     * @param $url
-     * @return null|string
-     */
-    public function getServiceFromUrl($url) {
-        if (strpos($url, 'facebook') > -1)
-            return 'facebook';
-        if (strpos($url, 'twitter') > -1)
-            return 'twitter';
-        if (strpos($url, 'instagram') > -1)
-            return 'instagram';
-        return null;
-    }
+	/**
+	 * Get service by url
+	 * @param $url
+	 * @return null|string
+	 */
+	public function getServiceFromUrl($url) {
+		if (strpos($url, 'facebook') > -1)
+			return 'facebook';
+		if (strpos($url, 'twitter') > -1)
+			return 'twitter';
+		if (strpos($url, 'instagram') > -1)
+			return 'instagram';
+		return null;
+	}
 }
 
 /**
@@ -140,19 +140,19 @@ abstract class SocialFeedService {
 	 */
 	abstract public function getItem($id);
 
-    /**
-     * @param string $url
-     * @return string|null
-     */
-    abstract public function getIdFromUrl($url);
+	/**
+	 * @param string $url
+	 * @return string|null
+	 */
+	abstract public function getIdFromUrl($url);
 
-    /**
-     * @param string $url
-     * @return Item|null
-     */
-    public function getItemFromUrl($url) {
-        return $this->getItem($this->getIdFromUrl($url));
-    }
+	/**
+	 * @param string $url
+	 * @return Item|null
+	 */
+	public function getItemFromUrl($url) {
+		return $this->getItem($this->getIdFromUrl($url));
+	}
 
 	protected function mediaFromUrl($url) {
 		$media = new Media();
@@ -255,12 +255,12 @@ class TwitterService extends SocialFeedService {
 		return $this->parseItem($this->getConnection()->get("statuses/show/$id"));
 	}
 
-    public function getIdFromUrl($url) {
-        if (preg_match('/status\/([0-9]+)/i', $url, $matches)) {
-            return $matches[1];
-        }
-        return null;
-    }
+	public function getIdFromUrl($url) {
+		if (preg_match('/status\/([0-9]+)/i', $url, $matches)) {
+			return $matches[1];
+		}
+		return null;
+	}
 
 	private function parseItem($item) {
 		$response = new Item();
@@ -269,11 +269,19 @@ class TwitterService extends SocialFeedService {
 		$response->service = $this->service;
 		$response->id = $item->id;
 		$response->created = strtotime($item->created_at);
-		$user->id = $item->user->id;
-		$user->handle = $item->user->screen_name;
-		$user->image = $item->user->profile_image_url_https;
-		$user->link = $item->user->url;
-		$user->name = $item->user->name;
+		if (isset($item->retweeted_status)) {
+			$user->id = $item->retweeted_status->user->id;
+			$user->handle = $item->retweeted_status->user->screen_name;
+			$user->image = $item->retweeted_status->user->profile_image_url_https;
+			$user->link = $item->retweeted_status->user->url;
+			$user->name = $item->retweeted_status->user->name;
+		} else {
+			$user->id = $item->user->id;
+			$user->handle = $item->user->screen_name;
+			$user->image = $item->user->profile_image_url_https;
+			$user->link = $item->user->url;
+			$user->name = $item->user->name;
+		}
 		$response->link = "https://twitter.com/{$user->handle}/status/{$response->id}";
 		$response->text = $item->text;
 
@@ -326,16 +334,16 @@ class FacebookService extends SocialFeedService {
 		return $this->parseItem($this->getGraph($id));
 	}
 
-    public function getIdFromUrl($url) {
-        if (preg_match('/\/posts\/([0-9]+)/i', $url, $matches)) {
-            return $matches[1];
-        }
-        $request = @file_get_contents("https://graph.facebook.com/?ids=".urlencode($url));
-        if ($request === false)
-            return null;
-        $data = json_decode($request);
-        return $data->{$url}->id;
-    }
+	public function getIdFromUrl($url) {
+		if (preg_match('/\/posts\/([0-9]+)/i', $url, $matches)) {
+			return $matches[1];
+		}
+		$request = @file_get_contents("https://graph.facebook.com/?ids=".urlencode($url));
+		if ($request === false)
+			return null;
+		$data = json_decode($request);
+		return $data->{$url}->id;
+	}
 
 	protected function getGraph($endpoint) {
 		$credentials = $this->getCredentials();
@@ -360,28 +368,28 @@ class FacebookService extends SocialFeedService {
 		$user->name = $item->from->name;
 		$user->image = "https://graph.facebook.com/v2.3/{$user->id}/picture/";
 		$user->link = "https://facebook.com/profile.php?id={$user->id}";
-		$response->link = "http://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";//$item->link;
+		$response->link = $item->link;//"http://www.facebook.com/permalink.php?id={$user->id}&v=wall&story_fbid={$response->id}";
 		if (isset($item->message))
 			$response->text = $item->message;
-        if (isset($item->name))
-            $response->text = $item->name;
-        if (isset($item->type)) {
-            switch ($item->type) {
-                case 'photo':
-                    $media->image = "https://graph.facebook.com/{$item->object_id}/picture?type=normal";
-                    break;
-                case 'video':
-                    $media = $this->mediaFromUrl($item->link);
-            }
-        }
+		if (isset($item->name))
+			$response->text = $item->name;
+		if (isset($item->type)) {
+			switch ($item->type) {
+				case 'photo':
+					$media->image = "https://graph.facebook.com/{$item->object_id}/picture?type=normal";
+					break;
+				case 'video':
+					$media = $this->mediaFromUrl($item->link);
+			}
+		}
 
-        if (isset($item->images)) {
-            $total = count($item->images);
-            if ($total > 1)
-                $media->image = $item->images[1]->source;
-            else if ($total == 1)
-                $media->image = $item->images[0]->source;
-        }
+		if (isset($item->images)) {
+			$total = count($item->images);
+			if ($total > 1)
+				$media->image = $item->images[1]->source;
+			else if ($total == 1)
+				$media->image = $item->images[0]->source;
+		}
 
 		$response->user = $user;
 		$response->media = $media;
@@ -419,12 +427,12 @@ class InstagramService extends SocialFeedService {
 		return $this->parseItem($this->getApi("media/$media_id")->data);
 	}
 
-    public function getIdFromUrl($url) {
-        if (preg_match('/instagram\.com\/p\/([a-z0-9-_]+)\//i', $url, $matches)) {
-            return $matches[1];
-        }
-        return null;
-    }
+	public function getIdFromUrl($url) {
+		if (preg_match('/instagram\.com\/p\/([a-z0-9-_]+)\//i', $url, $matches)) {
+			return $matches[1];
+		}
+		return null;
+	}
 
 	protected function getApi($endpoint) {
 		$credentials = $this->getCredentials();
