@@ -31,6 +31,17 @@ class Media {
 	public $image;
 	/** @var Video */
 	public $video;
+    /** @var Array */
+    public $hash;
+
+    public function calcHash() {
+        $phasher = \PHasher::Instance();
+        $url = $this->image != null ? $this->image : $this->video->image;
+        if ($url == null) return;
+        $resource = imagecreatefromstring(file_get_contents($url));
+        $hash = $phasher->FastHashImage($resource);
+        $this->hash = $phasher->HashAsString($hash);
+    }
 }
 
 class Item {
@@ -50,6 +61,18 @@ class Item {
 	public $media;
 }
 
+class Config {
+    public function __construct(Array $cfg = []) {
+        foreach ($cfg as $k => $v) {
+            if (isset($this->{$k})) {
+                $this->{$k} = $v;
+            }
+        }
+    }
+    /** @var bool */
+    public $create_hash = false;
+}
+
 /**
  * Get feeds from different social networks in a unified format
  * @property-read TwitterService $twitter
@@ -57,10 +80,15 @@ class Item {
  * @property-read SocialFeedService $instagram
  */
 class SocialFeed {
+    /** @var array */
 	private $services = [];
+    /** @var array */
 	private $map = [];
+    /** @var Config */
+    private $config;
 
-	public function __construct() {
+	public function __construct(Array $config = []) {
+        $this->config = new Config($config);
 		$this->registerService('twitter', 'Codeurs\\SocialFeed\\TwitterService');
 		$this->registerService('facebook', 'Codeurs\\SocialFeed\\FacebookService');
 		$this->registerService('instagram', 'Codeurs\\SocialFeed\\InstagramService');
@@ -78,7 +106,7 @@ class SocialFeed {
 		if (!isset($this->map[$service]))
 			throw new \Exception("Service not found: $service");
 
-		$instance = new $this->map[$service]();
+		$instance = new $this->map[$service]($this->config);
 		if (!$instance instanceof SocialFeedService) {
 			throw new \Exception("Service $service does not implement SocialFeedService");
 		}
@@ -120,6 +148,12 @@ abstract class SocialFeedService {
 	protected $credentials;
 	/** @var string */
 	protected $service;
+    /** @var Config */
+    protected $config;
+
+    public function __construct(Config $config) {
+        $this->config = $config;
+    }
 
 	/**
 	 * @param array $credentials
@@ -196,10 +230,21 @@ abstract class SocialFeedService {
 				$video->image = "https://graph.facebook.com/{$video->id}/picture?type=large";
 				break;
 			//case preg_match('/amp\.twimg\.com\/v\/([a-z0-9-]+)/i', $url, $matches):
+            default:
+                $video = null;
+                break;
 		}
+        if ($video->service == null || $video->id == null) $video = null;
 		$media->video = $video;
 		return $media;
 	}
+
+    protected function process(Item $item) {
+        if ($this->config->create_hash) {
+            $item->media->calcHash();
+        }
+        return $item;
+    }
 
 	protected function requireCredentialKeys(array $keys, array $credentials) {
 		foreach ($keys as $key)
@@ -302,7 +347,7 @@ class TwitterService extends SocialFeedService {
 		$response->user = $user;
 		$response->media = $media;
 
-		return $response;
+		return $this->process($response);
 	}
 }
 
@@ -393,7 +438,7 @@ class FacebookService extends SocialFeedService {
 
 		$response->user = $user;
 		$response->media = $media;
-		return $response;
+		return $this->process($response);
 	}
 
 }
@@ -472,7 +517,7 @@ class InstagramService extends SocialFeedService {
 
 		$response->user = $user;
 		$response->media = $media;
-		return $response;
+		return $this->process($response);
 	}
 
 }

@@ -18,7 +18,8 @@
     },
     "require": {
         "php": ">=5.4.0",
-        "abraham/twitteroauth": "0.5.*"
+        "abraham/twitteroauth": "0.5.*",
+        "aodto/phasher": "dev-master"
     },
     "autoload": {
         "files": ["src/SocialFeed.php"]
