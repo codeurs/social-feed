@@ -39,8 +39,12 @@ class Media {
         $url = $this->image != null ? $this->image : $this->video->image;
         if ($url == null) return;
         $resource = imagecreatefromstring(file_get_contents($url));
-        $hash = $phasher->FastHashImage($resource);
-        $this->hash = $phasher->HashAsString($hash);
+        try {
+            $hash = $phasher->FastHashImage($resource);
+            $this->hash = $phasher->HashAsString($hash);
+        } catch (\Exception $e) {
+            $this->hash = null;
+        }
     }
 }
 
@@ -59,6 +63,10 @@ class Item {
 	public $user;
 	/** @var Media */
 	public $media;
+
+    public function image() {
+        return $this->media->image != null ? $this->media->image : $this->media->video->image;
+    }
 }
 
 class Config {
