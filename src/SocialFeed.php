@@ -65,7 +65,7 @@ class Item {
 	public $media;
 
     public function image() {
-        return $this->media->image != null ? $this->media->image : $this->media->video->image;
+        return $this->media->image != null ? $this->media->image : ($this->media->video == null ? null : $this->media->video->image);
     }
 }
 
@@ -346,7 +346,7 @@ class TwitterService extends SocialFeedService {
 		if (isset($item->entities->urls)) {
 			foreach ($item->entities->urls as $url) {
 				$parsed = $this->mediaFromUrl($url->expanded_url);
-				if ($parsed->image !== null || $parsed->video->id !== null)
+				if ($parsed->image !== null || ($parsed->video != null && $parsed->video->id !== null))
 					$media = $parsed;
 				break;
 			}
