@@ -36,7 +36,7 @@ class Media {
 
     public function calcHash() {
         $phasher = \PHasher::Instance();
-        $url = $this->image != null ? $this->image : $this->video->image;
+        $url = $this->image != null ? $this->image : ($this->video == null ? null : $this->video->image);
         if ($url == null) return;
         $resource = imagecreatefromstring(file_get_contents($url));
         try {
