@@ -242,7 +242,7 @@ abstract class SocialFeedService {
                 $video = null;
                 break;
 		}
-        if ($video->service == null || $video->id == null) $video = null;
+        if ($video == null || $video->service == null || $video->id == null) $video = null;
 		$media->video = $video;
 		return $media;
 	}
