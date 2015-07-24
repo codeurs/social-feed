@@ -346,7 +346,7 @@ class TwitterService extends SocialFeedService {
 		if (isset($item->entities->urls)) {
 			foreach ($item->entities->urls as $url) {
 				$parsed = $this->mediaFromUrl($url->expanded_url);
-				if ($parsed->image !== null || ($parsed->video != null && $parsed->video->id !== null))
+				if (!empty($parsed->image) || !empty($parsed->video->id))
 					$media = $parsed;
 				break;
 			}
