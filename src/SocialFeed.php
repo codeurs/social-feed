@@ -226,9 +226,9 @@ abstract class SocialFeedService {
 					if (strpos($info->html, 'video') > -1) {
 						$video->id = $matches[0];
 						$video->service = 'instagram';
-						$video->image = $info->thumbnail_url;
-					} else {
-						$media->image = $info->thumbnail_url;
+                        $video->image = isset($info->thumbnail_url) ? $info->thumbnail_url : null;
+                    } else {
+                        $media->image = isset($info->thumbnail_url) ? $info->thumbnail_url : null;
 					}
 				}
 				break;
